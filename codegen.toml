@@ -1,0 +1,22 @@
+[[models]]
+path = "docs/org.wasmcloud"
+
+
+##
+## HTML documentation output
+##
+[html]
+
+# (optional) template dir to scan (overrides compiled-in templates)
+#templates = "../weld/docgen/templates"
+output_dir = "docs/doc"
+
+[html.parameters]
+# all parameters specified here are passed directly to doc templates
+
+# template name for page generation (default: 'namespace_doc')
+#doc_template = "namespace_doc"
+
+# whether to use minified tailwind.css (default false)
+minified = true
+
