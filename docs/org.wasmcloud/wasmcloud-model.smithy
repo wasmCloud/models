@@ -1,4 +1,4 @@
-namespace org.wasmcloud.model.v0
+namespace org.wasmcloud.model
 
 /// definitions for api modeling
 /// These are modifications to the basic data model
