@@ -1,66 +1,57 @@
+// wasmcloud-core.smithy
+// Core definitions for wasmcloud platform
+//
+
+// Tell the code generator how to reference symbols defined in this namespace
+metadata package = [ { namespace: "org.wasmcloud.core", crate: "wasmbus_rpc::core" } ]
+
 namespace org.wasmcloud.core
 
 use org.wasmcloud.model#nonEmptyString
-
-/// a protocol defines the semantics
-/// of how a client and server communicate.
-@protocolDefinition
-@trait(selector: "service")
-structure wasmbus {}
-
-
-/// Capability contract id, e.g. 'wasmcloud:httpserver'
-@nonEmptyString
-string CapabilityContractId
-
-
-/// The `capability` trait indicates that the api is part of a
-/// capability provider contract. A `capability` api may be
-/// in either direction: actor-to-provider (providerReceiver),
-/// or provider-to-actor (actorReceiver).
-@trait(selector: "service")
-structure capability {
-  @required
-  contractId: CapabilityContractId
-}
-
-/// the providerReceiver trait indicates service messages handled by a
-/// capability provider (actor-to-provider).
-@trait(selector: "service")
-structure providerReceiver { }
-
-/// the actorReceiver trait indicates service messages handled
-/// by an actor (either actor-to-actor or provider-to-actor).
-@trait(selector: "service")
-structure actorReceiver { }
+use org.wasmcloud.model#codegenRust
+use org.wasmcloud.model#serialization
+use org.wasmcloud.model#CapabilityContractId
+use org.wasmcloud.model#wasmbusData
 
 /// Actor service
-@actorReceiver
-@wasmbus
+@wasmbus(
+    actorReceive: true,
+)
 service Actor {
   version: "0.1",
   operations: [ HealthRequest ]
 }
 
-/// Capability Provider messages received from host
-@providerReceiver
-@wasmbus
-service CapabilityProvider {
-  version: "0.1",
-  operations: [ BindActor, RemoveActor, HealthRequest ]
+/// Link definition for an actor
+@wasmbusData
+structure LinkDefinition {
+    /// actor public key
+    @required
+    @serialization(name:"actor_id")
+    actorId: String,
+
+    /// provider public key
+    @required
+    @serialization(name:"provider_id")
+    providerId: String,
+
+    /// link name
+    @required
+    @serialization(name:"link_name")
+    linkName: String,
+
+    /// contract id
+    @required
+    @serialization(name:"contract_id")
+    contractId: String,
+
+    @required
+    values: LinkSettings,
 }
 
-/// instruction to capability provider to bind actor
-operation BindActor {
-    input: String
-}
-
-/// instruction to capability provider to remove actor actor
-operation RemoveActor {
-    input: String
-}
 
 /// Return value from actors and providers for health check status
+@wasmbusData
 structure HealthCheckResponse {
 
   /// A flag that indicates the the actor is healthy
@@ -71,6 +62,7 @@ structure HealthCheckResponse {
 }
 
 /// health check request parameter
+@wasmbusData
 structure HealthCheckRequest { }
 
 /// Perform health check. Called at regular intervals by host
@@ -78,3 +70,117 @@ operation HealthRequest {
     input: HealthCheckRequest
     output: HealthCheckResponse
 }
+
+/// Settings associated with an actor-provider link
+map LinkSettings {
+    key: String,
+    value: String,
+}
+
+/// List of linked actors for a provider
+list ActorLinks {
+    member: LinkDefinition
+}
+
+/// initialization data for a capability provider
+@wasmbusData
+structure HostData {
+    @required
+    @serialization(name: "host_id")
+    hostId: String,
+
+    @required
+    @serialization(name: "lattice_rpc_prefix")
+    latticeRpcPrefix: String,
+
+    @required
+    @serialization(name: "link_name")
+    linkName: String,
+
+    @required
+    @serialization(name: "lattice_rpc_user_jwt")
+    latticeRpcUserJwt: String,
+
+    @required
+    @serialization(name: "lattice_rpc_user_seed")
+    latticeRpcUserSeed: String,
+
+    @required
+    @serialization(name: "lattice_rpc_url")
+    latticeRpcUrl: String,
+
+    @required
+    @serialization(name: "provider_key")
+    providerKey: String,
+
+    @required
+    @serialization(name: "env_values")
+    envValues: HostEnvValues,
+}
+
+/// Environment settings for initializing a capability provider
+map HostEnvValues {
+    key: String,
+    value: String,
+}
+
+/// RPC message to capability provider
+@wasmbusData
+structure Invocation {
+    @required
+    origin: WasmCloudEntity,
+
+    @required
+    target: WasmCloudEntity,
+
+    @required
+    operation: String,
+
+    @required
+    msg: Blob,
+
+    @required
+    id: String,
+
+    @required
+    @serialization(name: "encoded_class")
+    encodedClass: String,
+
+    @required
+    @serialization(name: "host_id")
+    hostId: String,
+}
+
+@wasmbusData
+structure WasmCloudEntity {
+
+    @required
+    @serialization(name: "public_key")
+    publicKey: String,
+
+    @required
+    @serialization(name: "link_name")
+    linkName: String,
+
+    @required
+    @serialization(name: "contract_id")
+    contractId: CapabilityContractId,
+}
+
+/// Response to an invocation
+@wasmbusData
+structure InvocationResponse {
+
+    /// serialize response message
+    @required
+    msg: Blob,
+
+    /// optional error message
+    error: String,
+
+    /// id connecting this response to the invocation
+    @required
+    @serialization(name: "invocation_id")
+    invocationId: String,
+}
+
